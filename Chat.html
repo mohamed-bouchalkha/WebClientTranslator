@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .chat-container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .chat-output {
+            border: 1px solid #ddd;
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            background: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .chat-output div {
+            max-width: 80%;
+            padding: 10px;
+            border-radius: 5px;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end; /* Right align user messages */
+        }
+        .bot-message {
+            background-color: #f1f1f1;
+            color: black;
+            align-self: flex-start; /* Left align bot messages */
+        }
+        .chat-input {
+            display: flex;
+        }
+        .chat-input textarea {
+            width: 80%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+        }
+        .chat-input button {
+            width: 20%;
+            padding: 10px;
+            background: #007bff;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .chat-input button:hover {
+            background: #0056b3;
+        }
+        /* Style for the title and icon */
+        .chat-container h1 {
+            display: flex;
+            align-items: center; /* Align icon and title horizontally */
+            font-size: 32px; /* Increase title size */
+            margin: 0;
+            text-align: center; /* Center the text */
+        }
+        .chat-container h1 img {
+            width: 50px; /* Increase the size of the icon */
+            margin-right: 10px; /* Space between icon and title */
+        }
+        /* CSS for the loading dots */
+        .loading-dots {
+            display: inline-block;
+            font-size: 20px;
+            color: #007bff;
+        }
+        .dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            margin: 0 3px;
+            border-radius: 50%;
+            background-color: #007bff;
+            opacity: 0;
+            animation: dot-blink 1.5s infinite;
+        }
+        .dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+        .dot:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+        .dot:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+        @keyframes dot-blink {
+            0% {
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h1><img src="icon.png" alt="Chatbot Icon">Chatbot</h1>
+        <div class="chat-output" id="chatOutput"></div>
+        <form id="chatForm">
+            <div class="chat-input">
+                <textarea id="userMessage" rows="2" placeholder="Type your message here..." required></textarea>
+                <button type="submit">Send</button>
+            </div>
+        </form>
+    </div>
+    <script>
+        const chatForm = document.getElementById('chatForm');
+        const chatOutput = document.getElementById('chatOutput');
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userMessage = document.getElementById('userMessage').value;
+
+            // Add user message to the chat
+            chatOutput.innerHTML += `<div class="user-message"><strong>You:</strong> ${userMessage}</div>`;
+
+            // Show loading dots while waiting for the response
+            const loadingMessage = `<div class="bot-message"><strong>Bot:</strong> <span class="loading-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span></div>`;
+            chatOutput.innerHTML += loadingMessage;
+
+            try {
+                // Call the chatbot backend
+                const response = await fetch('index.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: userMessage })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const botReply = data.reply || 'Sorry, I could not process your request.';
+
+                // Remove loading dots and show bot reply
+                const lastBotMessage = chatOutput.lastElementChild;
+                lastBotMessage.innerHTML = `<strong>Bot:</strong> ${botReply}`;
+            } catch (error) {
+                // Remove loading dots and display error message in chat
+                const lastBotMessage = chatOutput.lastElementChild;
+                lastBotMessage.innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+
+            // Scroll to the bottom
+            chatOutput.scrollTop = chatOutput.scrollHeight;
+
+            // Clear input
+            document.getElementById('userMessage').value = '';
+        });
+    </script>
+</body>
+</html>
