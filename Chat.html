@@ -3,179 +3,438 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>English to Darija Translator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f7ff',
+                            500: '#2563eb',
+                            700: '#1d4ed8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 0;
-        }
-        .chat-container {
-            max-width: 600px;
-            margin: 50px auto;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-        }
-        .chat-output {
-            border: 1px solid #ddd;
-            height: 300px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-            padding: 10px;
-            border-radius: 5px;
-            background: #f9f9f9;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .chat-output div {
-            max-width: 80%;
-            padding: 10px;
-            border-radius: 5px;
-            word-wrap: break-word;
-        }
-        .user-message {
-            background-color: #007bff;
-            color: white;
-            align-self: flex-end; /* Right align user messages */
-        }
-        .bot-message {
-            background-color: #f1f1f1;
-            color: black;
-            align-self: flex-start; /* Left align bot messages */
-        }
-        .chat-input {
-            display: flex;
-        }
-        .chat-input textarea {
-            width: 80%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            resize: none;
-        }
-        .chat-input button {
-            width: 20%;
-            padding: 10px;
-            background: #007bff;
-            border: none;
-            color: #fff;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        .chat-input button:hover {
-            background: #0056b3;
-        }
-        /* Style for the title and icon */
-        .chat-container h1 {
-            display: flex;
-            align-items: center; /* Align icon and title horizontally */
-            font-size: 32px; /* Increase title size */
-            margin: 0;
-            text-align: center; /* Center the text */
-        }
-        .chat-container h1 img {
-            width: 50px; /* Increase the size of the icon */
-            margin-right: 10px; /* Space between icon and title */
-        }
-        /* CSS for the loading dots */
         .loading-dots {
             display: inline-block;
             font-size: 20px;
-            color: #007bff;
+            color: #2563eb;
         }
         .dot {
             display: inline-block;
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             margin: 0 3px;
             border-radius: 50%;
-            background-color: #007bff;
+            background-color: #2563eb;
             opacity: 0;
             animation: dot-blink 1.5s infinite;
         }
-        .dot:nth-child(1) {
-            animation-delay: 0s;
-        }
-        .dot:nth-child(2) {
-            animation-delay: 0.3s;
-        }
-        .dot:nth-child(3) {
-            animation-delay: 0.6s;
-        }
+        .dot:nth-child(1) { animation-delay: 0s; }
+        .dot:nth-child(2) { animation-delay: 0.3s; }
+        .dot:nth-child(3) { animation-delay: 0.6s; }
         @keyframes dot-blink {
-            0% {
-                opacity: 0;
-            }
-            50% {
-                opacity: 1;
-            }
-            100% {
-                opacity: 0;
-            }
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
         }
     </style>
 </head>
-<body>
-    <div class="chat-container">
-        <h1><img src="icon.png" alt="Chatbot Icon">Chatbot</h1>
-        <div class="chat-output" id="chatOutput"></div>
-        <form id="chatForm">
-            <div class="chat-input">
-                <textarea id="userMessage" rows="2" placeholder="Type your message here..." required></textarea>
-                <button type="submit">Send</button>
+<body class="bg-gray-100">
+    <div id="newChatModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-96">
+            <h2 class="text-lg font-semibold mb-4">New Conversation</h2>
+            <input
+                id="chatNameInput"
+                type="text"
+                class="w-full border border-gray-300 rounded-lg p-2 mb-4"
+                placeholder="Enter chat name"
+            />
+            <div class="flex justify-end gap-4">
+                <button onclick="closeNewChatModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                    Cancel
+                </button>
+                <button onclick="createNewChat()" class="px-4 py-2 bg-primary-500 text-white hover:bg-primary-700 rounded-lg">
+                    Create
+                </button>
             </div>
-        </form>
+        </div>
     </div>
-    <script>
-        const chatForm = document.getElementById('chatForm');
-        const chatOutput = document.getElementById('chatOutput');
+    
+    <div id="chatMenuModal" class="hidden fixed inset-0 z-50">
+        <div id="chatMenuContent" class="absolute bg-white rounded-lg shadow-lg w-48 py-1">
+            <button onclick="showRenamePrompt()" class="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Rename chat
+            </button>
+            <button onclick="removeChat()" class="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Remove chat
+            </button>
+        </div>
+    </div>
+    <div class="flex h-screen">
+        <!-- Enhanced Sidebar -->
+        <div class="w-72 bg-white border-r flex flex-col">
+            <!-- New Conversation Button -->
+            <div class="p-4">
+                <button onclick="startNewConversation()" class="w-full bg-primary-500 text-white rounded-lg py-3 px-4 flex items-center justify-center gap-2 hover:bg-primary-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    New Conversation
+                </button>
+                <ul id="chatList"></ul>
 
-        chatForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const userMessage = document.getElementById('userMessage').value;
+            </div>
 
-            // Add user message to the chat
-            chatOutput.innerHTML += `<div class="user-message"><strong>You:</strong> ${userMessage}</div>`;
+            <!-- Sidebar Navigation -->
+            <!-- <nav class="px-4 pb-4">
+                <div class="flex items-center gap-2 text-gray-700 hover:bg-primary-50 p-2 rounded-lg cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    Clear Conversations
+                </div>
+                <div class="flex items-center gap-2 text-gray-700 hover:bg-primary-50 p-2 rounded-lg cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                    </svg>
+                    Export Chat
+                </div>
+            </nav> -->
 
-            // Show loading dots while waiting for the response
-            const loadingMessage = `<div class="bot-message"><strong>Bot:</strong> <span class="loading-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span></div>`;
-            chatOutput.innerHTML += loadingMessage;
+            <!-- Saved Chats Section -->
+            <div class="px-4 py-2 border-t">
+                <h2 class="font-semibold text-gray-700 mb-2">Saved Conversations</h2>
+            </div>
+            <div id="savedChats" class="flex-1 overflow-y-auto px-4">
+                <!-- Sample saved chat items -->
+                <div class="flex items-center gap-2 p-2 hover:bg-primary-50 rounded-lg cursor-pointer mb-2">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                    </svg>
+                    <span class="text-gray-700">Previous Chat 1</span>
+                </div>
+            </div>
+        </div>
 
-            try {
-                // Call the chatbot backend
-                const response = await fetch('index.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: userMessage })
-                });
+        <!-- Main Chat Area -->
+        <div class="flex-1 flex flex-col">
+            <div class="m-2 flex-1 border flex flex-col rounded-xl bg-white overflow-hidden">
+                <header class="w-full bg-primary-500 flex justify-between px-6 py-4 items-center">
+                    <h2 class="text-lg font-semibold text-white flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6" viewBox="0 0 24 24">
+                            <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                <path d="M4 15.5a2 2 0 1 1 0-4m16 4a2 2 0 1 0 0-4M7 7V4m10 3V4" />
+                                <circle cx="7" cy="3" r="1" />
+                                <circle cx="17" cy="3" r="1" />
+                                <path d="M13.5 7h-3c-2.828 0-4.243 0-5.121.909S4.5 10.281 4.5 13.207s0 4.389.879 5.298c.878.909 2.293.909 5.121.909h1.025c.792 0 1.071.163 1.617.757c.603.657 1.537 1.534 2.382 1.738c1.201.29 1.336-.111 1.068-1.256c-.076-.326-.267-.847-.066-1.151c.113-.17.3-.212.675-.296c.591-.132 1.079-.348 1.42-.701c.879-.91.879-2.372.879-5.298s0-4.389-.879-5.298C17.743 7 16.328 7 13.5 7" />
+                                <path d="M9.5 15c.57.607 1.478 1 2.5 1s1.93-.393 2.5-1m-5.491-4H9m6.009 0H15" />
+                            </g>
+                        </svg>
+                        English to Darija Translator
+                    </h2>
+                </header>
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
+                <div id="chatOutput" class="flex-1 flex flex-col gap-4 p-4 overflow-y-auto">
+                    <!-- Chat messages will appear here -->
+                </div>
 
-                const data = await response.json();
-                const botReply = data.reply || 'Sorry, I could not process your request.';
+                <div class="border-t p-4">
+                    <form id="chatForm" class="flex items-center gap-3">
+                        <textarea 
+                            id="userMessage" 
+                            rows="1" 
+                            class="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 p-4" 
+                            placeholder="Type your English text here..." 
+                            required
+                        ></textarea>
+                        <button type="submit" class="flex justify-center items-center h-12 w-12 bg-primary-500 text-white rounded-full cursor-pointer hover:bg-primary-700 transition-colors">
+                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M4.4 19.425q-.5.2-.95-.088T3 18.5V14l8-2l-8-2V5.5q0-.55.45-.837t.95-.088l15.4 6.5q.625.275.625.925t-.625.925z"/>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
 
-                // Remove loading dots and show bot reply
-                const lastBotMessage = chatOutput.lastElementChild;
-                lastBotMessage.innerHTML = `<strong>Bot:</strong> ${botReply}`;
-            } catch (error) {
-                // Remove loading dots and display error message in chat
-                const lastBotMessage = chatOutput.lastElementChild;
-                lastBotMessage.innerHTML = `<strong>Error:</strong> ${error.message}`;
-            }
+<script>
+    const chatForm = document.getElementById('chatForm');
+const chatOutput = document.getElementById('chatOutput');
+const saveModal = document.getElementById('saveModal');
+const savedChatsContainer = document.getElementById('savedChats');
 
-            // Scroll to the bottom
-            chatOutput.scrollTop = chatOutput.scrollHeight;
+// Chat state management
+let currentChatId = null;
+let chats = JSON.parse(localStorage.getItem('savedChats') || '[]');
 
-            // Clear input
-            document.getElementById('userMessage').value = '';
+// Initialize app
+function initApp() {
+    loadSavedChats();
+    showWelcomeMessage();
+}
+
+let selectedChatIndex = null;
+
+function showChatMenu(event, index) {
+    event.stopPropagation();
+    selectedChatIndex = index;
+    const modal = document.getElementById('chatMenuModal');
+    const content = document.getElementById('chatMenuContent');
+    modal.classList.remove('hidden');
+    
+    // Position menu near click
+    content.style.top = `${event.clientY}px`;
+    content.style.left = `${event.clientX}px`;
+}
+
+function showRenamePrompt() {
+    const chat = chats[selectedChatIndex];
+    const newName = prompt('Enter new name:', chat.name);
+    if (newName && newName.trim()) {
+        chat.name = newName.trim();
+        localStorage.setItem('savedChats', JSON.stringify(chats));
+        loadSavedChats();
+    }
+    closeChatMenu();
+}
+
+function removeChat() {
+    if (confirm('Are you sure you want to remove this chat?')) {
+        chats.splice(selectedChatIndex, 1);
+        localStorage.setItem('savedChats', JSON.stringify(chats));
+        loadSavedChats();
+        if (chats.length === 0) {
+            startNewConversation();
+        }
+    }
+    closeChatMenu();
+}
+
+function closeChatMenu() {
+    document.getElementById('chatMenuModal').classList.add('hidden');
+    selectedChatIndex = null;
+}
+
+function createMessage(content, isUser = false) {
+    return `
+        <div class="flex items-end ${isUser ? 'flex-row-reverse' : ''}">
+            <div class="rounded bg-primary-500 w-8 aspect-square p-1.5">
+                ${isUser ? `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+                        <path fill="#ffffff" d="M230.92 212c-15.23-26.33-38.7-45.21-66.09-54.16a72 72 0 1 0-73.66 0c-27.39 8.94-50.86 27.82-66.09 54.16a8 8 0 1 0 13.85 8c18.84-32.56 52.14-52 89.07-52s70.23 19.44 89.07 52a8 8 0 1 0 13.85-8M72 96a56 56 0 1 1 56 56a56.06 56.06 0 0 1-56-56" />
+                    </svg>
+                ` : `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <g fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                            <path d="M4 15.5a2 2 0 1 1 0-4m16 4a2 2 0 1 0 0-4M7 7V4m10 3V4" />
+                            <circle cx="7" cy="3" r="1" />
+                            <circle cx="17" cy="3" r="1" />
+                            <path d="M13.5 7h-3c-2.828 0-4.243 0-5.121.909S4.5 10.281 4.5 13.207s0 4.389.879 5.298c.878.909 2.293.909 5.121.909h1.025c.792 0 1.071.163 1.617.757c.603.657 1.537 1.534 2.382 1.738c1.201.29 1.336-.111 1.068-1.256c-.076-.326-.267-.847-.066-1.151c.113-.17.3-.212.675-.296c.591-.132 1.079-.348 1.42-.701c.879-.91.879-2.372.879-5.298s0-4.389-.879-5.298C17.743 7 16.328 7 13.5 7" />
+                            <path d="M9.5 15c.57.607 1.478 1 2.5 1s1.93-.393 2.5-1m-5.491-4H9m6.009 0H15" />
+                        </g>
+                    </svg>
+                `}
+            </div>
+            <p class="mx-2 p-2 rounded bg-gray-200 leading-4 text-sm">${content}</p>
+        </div>
+    `;
+}
+
+function showWelcomeMessage() {
+    const welcomeMessage = `Marhba bik! 👋 
+I'm your English to Darija translator.
+
+I can help you translate English text into Moroccan Darija (الدارجة المغربية).
+
+Just type your English text, and I'll provide the Darija translation.`;
+    
+    chatOutput.innerHTML = createMessage(welcomeMessage);
+}
+
+// New conversation functionality
+function startNewConversation() {
+    chatOutput.innerHTML = '';
+    showWelcomeMessage();
+}
+
+// Clear conversations functionality
+function clearConversations() {
+    if (confirm('Are you sure you want to clear all conversations?')) {
+        localStorage.removeItem('savedChats');
+        chats = [];
+        savedChatsContainer.innerHTML = '';
+        startNewConversation();
+    }
+}
+
+// Export chat functionality
+function exportChat() {
+    const chatText = chatOutput.innerText;
+    const blob = new Blob([chatText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'chat-export.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Save chat functionality
+function showSaveModal() {
+    saveModal.classList.remove('hidden');
+}
+
+function startNewConversation() {
+    document.getElementById('newChatModal').classList.remove('hidden');
+    document.getElementById('chatNameInput').value = ''; // Clear input
+}
+
+function closeNewChatModal() {
+    document.getElementById('newChatModal').classList.add('hidden');
+}
+
+function createNewChat() {
+    const chatNameInput = document.getElementById('chatNameInput');
+    const chatName = chatNameInput.value.trim();
+    
+    if (!chatName) {
+        alert('Please enter a name for the chat.');
+        return;
+    }
+
+    const newChat = {
+        id: Date.now(),
+        name: chatName,
+        messages: []
+    };
+
+    chats.push(newChat);
+    localStorage.setItem('savedChats', JSON.stringify(chats));
+    loadSavedChats();
+    closeNewChatModal();
+}
+
+
+
+// Updated loadSavedChats function
+function loadSavedChats() {
+    savedChatsContainer.innerHTML = '';
+    chats.forEach((chat, index) => {
+        const chatElement = document.createElement('div');
+        chatElement.className = 'group flex items-center justify-between p-2 hover:bg-gray-100 cursor-pointer rounded';
+        chatElement.innerHTML = `
+            <div class="flex items-center gap-2" onclick="loadChat(${index})">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                </svg>
+                <div>
+                    <div class="font-medium">${chat.name}</div>
+ 
+                </div>
+            </div>
+            <button onclick="showChatMenu(event, ${index})" class="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                </svg>
+            </button>
+        `;
+        savedChatsContainer.appendChild(chatElement);
+    });
+}
+
+
+
+
+// Close menu when clicking outside
+document.addEventListener('click', (event) => {
+    const modal = document.getElementById('chatMenuModal');
+    const content = document.getElementById('chatMenuContent');
+    if (!modal.classList.contains('hidden') && !content.contains(event.target)) {
+        closeChatMenu();
+    }
+});
+function loadChat(index) {
+    const chat = chats[index];
+    if (chat) {
+        chatOutput.innerHTML = chat.messages;
+        chatOutput.scrollTop = chatOutput.scrollHeight;
+    }
+}
+
+// Chat form submission
+chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const userMessage = document.getElementById('userMessage').value;
+    if (!userMessage.trim()) return;
+
+    // Add user message
+    chatOutput.innerHTML += createMessage(userMessage, true);
+
+    // Show loading dots
+    const loadingMessage = createMessage(`
+        <span class="loading-dots">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+        </span>
+    `);
+    chatOutput.innerHTML += loadingMessage;
+
+    try {
+        const response = await fetch('index.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: userMessage })
         });
-    </script>
+
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+        const data = await response.json();
+        const botReply = data.reply || 'Sorry, I could not process your request.';
+
+        // Remove loading message and show bot reply
+        const lastBotMessage = chatOutput.lastElementChild;
+        lastBotMessage.outerHTML = createMessage(botReply);
+    } catch (error) {
+        const lastBotMessage = chatOutput.lastElementChild;
+        lastBotMessage.outerHTML = createMessage(`Error: ${error.message}`);
+    }
+
+    // Scroll to bottom and clear input
+    chatOutput.scrollTop = chatOutput.scrollHeight;
+    document.getElementById('userMessage').value = '';
+});
+
+// Before unload handler
+window.onbeforeunload = function(e) {
+    const currentChat = chatOutput.innerHTML;
+    if (currentChat && currentChat !== '') {
+        e.preventDefault();
+        showSaveModal();
+        return '';
+    }
+};
+
+// Initialize app
+document.addEventListener('DOMContentLoaded', initApp);
+</script>
 </body>
 </html>
